@@ -558,15 +558,9 @@ class Operator(object):
                 if (attr_name not in self.attrs) or (
                         self.attrs[attr_name] is None):
                     continue
-                if isinstance(self.attrs[attr_name], Block):
-                    self.desc.set_block_attr(attr_name,
-                                             self.attrs[attr_name].desc)
-                elif isinstance(self.attrs[attr_name], core.BlockDesc) or \
-                        isinstance(self.attrs[attr_name], core.ProgramDesc):
-                    self.desc.set_serialized_attr(
-                        attr_name, self.attrs[attr_name].serialize_to_string())
-                else:
-                    self.desc.set_attr(attr_name, self.attrs[attr_name])
+                attr_val = self.attrs[attr_name]
+                self._update_desc_attr(attr_name, attr_val)
+
         self.desc.check_attrs()
         if self.has_kernel(type):
             self.desc.infer_var_type(self.block.desc)
@@ -713,8 +707,24 @@ class Operator(object):
             ValueError: If the type of value doesn't match with desc.attr_type(name).
         """
         self.attrs[name] = val
+        self._update_desc_attr(name, val)
+
+    def _update_desc_attr(self, name, val):
+        """
+        Update the value of desc's attribute by attribute's name.
+
+        Args:
+            name(str): the attribute name.
+            val(bool|int|str|float|list): the value of the attribute.
+
+        Raises:
+            ValueError: If the type of value doesn't match with desc.attr_type(name).
+        """
         if isinstance(val, Block):
             self.desc.set_block_attr(name, val.desc)
+        elif isinstance(val, list) and val and all(
+                isinstance(v, Block) for v in val):
+            self.desc.set_blocks_attr(name, [v.desc for v in val])
         elif isinstance(val, core.BlockDesc) or \
                 isinstance(val, core.ProgramDesc):
             self.desc.set_serialized_attr(name, val.serialize_to_string())
