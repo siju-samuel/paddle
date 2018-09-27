@@ -1428,6 +1428,9 @@ to transpile() call.")
         elif op_type == "rmsprop":
             if varkey in ["Moment", "MeanSquare"]:
                 return param_shape
+        elif op_type == "decayed_adagrad":
+            if varkey == "Moment":
+                return param_shape
         elif op_type == "sgd":
             pass
         return orig_shape
@@ -1484,7 +1487,6 @@ to transpile() call.")
                 per_trainer_name = "%s.trainer_%d" % \
                                    (merged_var_name, i)
                 vars2merge.append(pserver_block.vars[per_trainer_name])
-
             optimize_block.append_op(
                 type="sum",
                 inputs={"X": vars2merge},
